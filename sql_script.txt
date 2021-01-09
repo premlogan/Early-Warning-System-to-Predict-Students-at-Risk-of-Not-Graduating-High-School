@@ -1,0 +1,155 @@
+with absences_9 as
+(
+select student_lookup, grade, sum(aa.absence_length::float) num_absent_dates_9, max(aa.absence_length) max_absent_days_9,
+sum(case when absence_desc ='tardy_unexcused' then aa.absence_length::float else 0 end) as "abs_desc_tardy_unexcused_9",
+sum(case when absence_desc ='absence_unexcused' then aa.absence_length::float else 0 end) as "abs_desc_absence_unexcused_9",
+sum(case when absence_desc ='suspension_in_school' then aa.absence_length::float else 0 end) as "abs_desc_suspension_in_school_9",
+sum(case when absence_desc ='suspension' then aa.absence_length::float else 0 end) as "abs_desc_suspension_9",
+sum(case when absence_desc ='suspension_out_school' then aa.absence_length::float else 0 end) as "abs_desc_suspension_out_school_9",
+sum(case when absence_desc ='suspension_educated' then aa.absence_length::float else 0 end) as "abs_desc_suspension_educated_9",
+sum(case when absence_desc ='expulsion' then aa.absence_length::float else 0 end) as "abs_desc_expulsion_9",
+sum(case when absence_desc ='absence_excused' then aa.absence_length::float else 0 end) as "abs_desc_absence_excused_9",
+sum(case when absence_desc ='alternative_school' then aa.absence_length::float else 0 end) as "abs_desc_alternative_school_9"
+from clean.all_absences aa
+where grade = 9
+group by student_lookup, grade
+),
+absences_8 as
+(
+select student_lookup, grade, sum(aa.absence_length::float) num_absent_dates_8,max(aa.absence_length) max_absent_days_8,
+sum(case when absence_desc ='tardy_unexcused' then aa.absence_length::float else 0 end) as "abs_desc_tardy_unexcused_8",
+sum(case when absence_desc ='absence_unexcused' then aa.absence_length::float else 0 end) as "abs_desc_absence_unexcused_8",
+sum(case when absence_desc ='suspension_in_school' then aa.absence_length::float else 0 end) as "abs_desc_suspension_in_school_8",
+sum(case when absence_desc ='suspension' then aa.absence_length::float else 0 end) as "abs_desc_suspension_8",
+sum(case when absence_desc ='suspension_out_school' then aa.absence_length::float else 0 end) as "abs_desc_suspension_out_school_8",
+sum(case when absence_desc ='suspension_educated' then aa.absence_length::float else 0 end) as "abs_desc_suspension_educated_8",
+sum(case when absence_desc ='expulsion' then aa.absence_length::float else 0 end) as "abs_desc_expulsion_8",
+sum(case when absence_desc ='absence_excused' then aa.absence_length::float else 0 end) as "abs_desc_absence_excused_8",
+sum(case when absence_desc ='alternative_school' then aa.absence_length::float else 0 end) as "abs_desc_alternative_school_8"
+from clean.all_absences aa
+where grade = 8
+group by student_lookup, grade
+),
+gpa_9 as (
+select distinct ag.student_lookup, hsg.gpa "9_gpa", hsg.num_classes "9_num_classes"
+from clean.all_grades ag 
+left join clean.high_school_gpa hsg on hsg.student_lookup = ag.student_lookup and ag.school_year = hsg.school_year 
+where ag.grade = 9
+),
+intervention_8_9 as (
+select student_lookup, 
+max(case when grade = 8 and btrim(inv_group)='' then 'NA' else inv_group end) as "intervention_8_category",
+max(case when grade = 9 and btrim(inv_group)='' then 'NA' else inv_group end) as "intervention_9_category",
+max(case when grade = 8 then description end) as "intervention_8_description",
+max(case when grade = 9 then description end) as "intervention_9_description"
+from clean.intervention i 
+group by student_lookup
+),
+aggregated_table as
+(
+select ag.student_lookup,
+max(case when ag.grade = 9 then ag.district else null end) "9_grade_district",
+max(case when ag.grade = 10 then ag.district else null end) "10_grade_district",
+max(case when ag.grade = 10 then ag.school_year else null end) "10_school_year",
+max(as2.birth_date) dob,
+max(case when as2.disability = 'none' then null else as2.disability end) disability, 
+max(case when as2.disadvantagement = 'none' then null else as2.disadvantagement end) "disadvantagement",
+max(as2.ethnicity) "ethnicity", max(as2.gender) "gender", 
+max(case when as2.gifted = 'N' then null else as2.gifted end) "is_gifted",
+max(as2.special_ed) "special_ed",
+max(case when ab9.grade = 9 then ab9.num_absent_dates_9 else null end) "9_num_absent_dates",
+max(case when ab8.grade = 8 then ab8.num_absent_dates_8 else null end) "8_num_absent_dates",
+max(date_part('year', as2.graduation_date)) "grad_year",
+max(as2.graduation_date) as "grad_date",
+max(o.eighth_math_pl) as "eighth_math_pl",
+max(o.eighth_math_ss) as "eighth_math_ss",
+max(o.eighth_read_pl) as "eighth_read_pl",
+max(o.eighth_read_ss) as "eighth_read_ss",
+max(o.eighth_science_pl) as "eighth_science_pl",
+max(o.eighth_science_ss) as "eighth_science_ss",
+max(o.eighth_socstudies_pl) as "eighth_socstudies_pl",
+max(o.eighth_socstudies_ss) as "eighth_socstudies_ss",
+max(gpa_9."9_gpa") as "9_gpa",
+max("9_num_classes") as "9_num_classes",
+left(max(as2."zip"),5) as "std_zip",
+max(ab9.abs_desc_tardy_unexcused_9) as "abs_desc_tardy_unexcused_9",max(ab9.abs_desc_absence_unexcused_9) as "abs_desc_absence_unexcused_9",
+max(ab9.abs_desc_suspension_in_school_9) as "abs_desc_suspension_in_school_9",max(ab9.abs_desc_suspension_9) as "abs_desc_suspension_9",
+max(ab9.abs_desc_suspension_out_school_9) as "abs_desc_suspension_out_school_9", max(ab9.abs_desc_suspension_educated_9) as "abs_desc_suspension_educated_9",
+max(ab9.abs_desc_expulsion_9) as "abs_desc_expulsion_9",max(ab9.abs_desc_absence_excused_9) as "abs_desc_absence_excused_9",
+max(ab9.abs_desc_alternative_school_9) as "abs_desc_alternative_school_9", max(ab8.abs_desc_tardy_unexcused_8) as "abs_desc_tardy_unexcused_8",
+max(ab8.abs_desc_absence_unexcused_8) as "abs_desc_absence_unexcused_8", max(ab8.abs_desc_suspension_in_school_8) as "abs_desc_suspension_in_school_8",
+max(ab8.abs_desc_suspension_8) as "abs_desc_suspension_8", max(ab8.abs_desc_suspension_out_school_8) as "abs_desc_suspension_out_school_8",
+max(ab8.abs_desc_suspension_educated_8) as "abs_desc_suspension_educated_8",max(ab8.abs_desc_expulsion_8) as "abs_desc_expulsion_8",
+max(ab8.abs_desc_absence_excused_8) as "abs_desc_absence_excused_8",max(ab8.abs_desc_alternative_school_8) as "abs_desc_alternative_school_8",
+max(ab9.max_absent_days_9) as "max_absent_days_9",
+max(ab8.max_absent_days_8) as "max_absent_days_8",
+max(eng.eighth_math_gp) as "eighth_math_gp",
+max(eng.eighth_reading_gp) as "eighth_reading_gp",
+max(eng.ninth_math_gp) as "ninth_math_gp",
+max(eng.ninth_reading_gp) as "ninth_reading_gp",
+max(iv.intervention_8_category) as "intervention_8_category",
+max(iv.intervention_9_category) as "intervention_9_category",
+max(iv.intervention_8_description) as "intervention_8_description",
+max(iv.intervention_9_description) as "intervention_9_description"
+from clean.all_grades ag
+left join clean.all_snapshots as2 on as2.student_lookup = ag.student_lookup 
+left join absences_9 ab9 on ab9.student_lookup = ag.student_lookup
+left join absences_8 ab8 on ab8.student_lookup = ag.student_lookup
+left join clean.oaaogt o on o.student_lookup = ag.student_lookup
+left join gpa_9 on gpa_9.student_lookup = ag.student_lookup
+left join sketch.eighth_ninth_gp eng  on eng.student_lookup =ag.student_lookup 
+left join intervention_8_9 iv on iv.student_lookup = ag.student_lookup 
+where ag.grade in (9,10) and ag.school_year is not null
+group by ag.student_lookup
+order by ag.student_lookup asc
+),
+aggregated_table_1 as
+(
+select "student_lookup",case when "9_grade_district" is null then 'joined_on_tenth'
+							 when "9_grade_district" = "10_grade_district" then 'no'
+							 else 'yes' end changed_district,
+"9_grade_district", "10_grade_district","10_school_year", 
+date_part('year', AGE(make_date(("10_school_year")::int , 10::int, 1::int), dob)) student_age, 
+"disability","disadvantagement","gender","ethnicity","is_gifted","special_ed","9_num_absent_dates","8_num_absent_dates",
+"abs_desc_tardy_unexcused_9","abs_desc_absence_unexcused_9","abs_desc_suspension_in_school_9","abs_desc_suspension_9","abs_desc_suspension_out_school_9",
+"abs_desc_suspension_educated_9","abs_desc_expulsion_9","abs_desc_absence_excused_9","abs_desc_alternative_school_9",
+"abs_desc_tardy_unexcused_8","abs_desc_absence_unexcused_8","abs_desc_suspension_in_school_8","abs_desc_suspension_8","abs_desc_suspension_out_school_8",
+"abs_desc_suspension_educated_8","abs_desc_expulsion_8","abs_desc_absence_excused_8","abs_desc_alternative_school_8",
+"max_absent_days_9", "max_absent_days_8", "grad_year","grad_date",
+"eighth_math_pl","eighth_math_ss","eighth_read_pl","eighth_read_ss","eighth_science_pl",
+"eighth_science_ss","eighth_socstudies_pl","eighth_socstudies_ss","9_gpa","9_num_classes","std_zip",
+"eighth_math_gp", "eighth_reading_gp", "ninth_math_gp", "ninth_reading_gp",
+"intervention_8_category","intervention_9_category","intervention_8_description","intervention_9_description",
+case when "10_school_year" < 2012 then 2012 else "10_school_year" end "zip_year"
+from aggregated_table 
+where "10_school_year" is not null
+)
+select "student_lookup", "changed_district", "9_grade_district", "10_grade_district", "10_school_year", "student_age", "disability", "disadvantagement", 
+"gender", "ethnicity", "is_gifted", "special_ed", "9_num_absent_dates", "8_num_absent_dates", 
+"abs_desc_tardy_unexcused_9","abs_desc_absence_unexcused_9","abs_desc_suspension_in_school_9","abs_desc_suspension_9","abs_desc_suspension_out_school_9",
+"abs_desc_suspension_educated_9","abs_desc_expulsion_9","abs_desc_absence_excused_9","abs_desc_alternative_school_9",
+"abs_desc_tardy_unexcused_8","abs_desc_absence_unexcused_8","abs_desc_suspension_in_school_8","abs_desc_suspension_8","abs_desc_suspension_out_school_8",
+"abs_desc_suspension_educated_8","abs_desc_expulsion_8","abs_desc_absence_excused_8","abs_desc_alternative_school_8",
+"max_absent_days_9", "max_absent_days_8", "grad_year", "grad_date", 
+"eighth_math_pl", "eighth_math_ss", "eighth_read_pl", "eighth_read_ss", "eighth_science_pl",
+"eighth_science_ss", "eighth_socstudies_pl", "eighth_socstudies_ss", "9_gpa","9_num_classes",
+"eighth_math_gp", "eighth_reading_gp", "ninth_math_gp", "ninth_reading_gp",
+"intervention_8_category","intervention_9_category","intervention_8_description","intervention_9_description",
+max(acs."Percent_families_BPL") as "Percent_families_BPL",
+max(acs."Percent_HS_grad_25yrs_above") as "Percent_HS_grad_25yrs_above", 
+max(acs."Percent_over_5yrs_not_speak_english_well") as "Percent_over_5yrs_not_speak_english_well", 
+max(acs."Percent_with_health_insurance") as "Percent_with_health_insurance", 
+case when "grad_date" < make_date(("10_school_year" +3)::int , 10::int, 1::int) then 0 else 1 end not_graduated
+from aggregated_table_1 ag 
+left join sketch."ACS_data_ZIP" as acs on ag.std_zip = acs."ZIP" and ag.zip_year = acs."Year"
+where "10_school_year" is not null
+group by "student_lookup","student_lookup", "changed_district", "9_grade_district", "10_grade_district", "10_school_year", "student_age", "disability", "disadvantagement", 
+"gender", "ethnicity", "is_gifted", "special_ed", "9_num_absent_dates", "8_num_absent_dates",
+"abs_desc_tardy_unexcused_9","abs_desc_absence_unexcused_9","abs_desc_suspension_in_school_9","abs_desc_suspension_9","abs_desc_suspension_out_school_9",
+"abs_desc_suspension_educated_9","abs_desc_expulsion_9","abs_desc_absence_excused_9","abs_desc_alternative_school_9",
+"abs_desc_tardy_unexcused_8","abs_desc_absence_unexcused_8","abs_desc_suspension_in_school_8","abs_desc_suspension_8","abs_desc_suspension_out_school_8",
+"abs_desc_suspension_educated_8","abs_desc_expulsion_8","abs_desc_absence_excused_8","abs_desc_alternative_school_8",
+"max_absent_days_9", "max_absent_days_8", "grad_year", "grad_date","eighth_math_gp", "eighth_reading_gp", "ninth_math_gp", "ninth_reading_gp",
+"intervention_8_category","intervention_9_category","intervention_8_description","intervention_9_description",
+"eighth_math_pl", "eighth_math_ss", "eighth_read_pl", "eighth_read_ss", "eighth_science_pl",
+"eighth_science_ss", "eighth_socstudies_pl", "eighth_socstudies_ss", "9_gpa","9_num_classes", "not_graduated"
